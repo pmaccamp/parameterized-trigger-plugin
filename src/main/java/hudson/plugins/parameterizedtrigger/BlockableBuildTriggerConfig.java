@@ -1,11 +1,13 @@
 package hudson.plugins.parameterizedtrigger;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.model.Cause.UpstreamCause;
 import hudson.model.Hudson;
 import hudson.model.Node;
@@ -13,6 +15,7 @@ import hudson.model.Run;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 
 import java.io.IOException;
@@ -27,24 +30,46 @@ import java.util.concurrent.Future;
  */
 public class BlockableBuildTriggerConfig extends BuildTriggerConfig {
     private final BlockingBehaviour block;
+    private final ConditionalTriggerConfig conditionalTrigger;
     public boolean buildAllNodesWithLabel;
 
     public BlockableBuildTriggerConfig(String projects, BlockingBehaviour block, List<AbstractBuildParameters> configs) {
         super(projects, ResultCondition.ALWAYS, false, configs);
         this.block = block;
+        this.conditionalTrigger = null;
+    }
+    
+    public BlockableBuildTriggerConfig(String projects, ConditionalTriggerConfig conditionalTrigger, BlockingBehaviour block, List<AbstractBuildParameters> configs) {
+        super(projects, ResultCondition.ALWAYS, false, configs);
+        this.block = block;
+        this.conditionalTrigger = conditionalTrigger;
     }
 
     @DataBoundConstructor
-    public BlockableBuildTriggerConfig(String projects, BlockingBehaviour block, List<AbstractBuildParameterFactory> configFactories,List<AbstractBuildParameters> configs) {
+    public BlockableBuildTriggerConfig(String projects, ConditionalTriggerConfig conditionalTrigger, BlockingBehaviour block, List<AbstractBuildParameterFactory> configFactories,List<AbstractBuildParameters> configs) {
         super(projects, ResultCondition.ALWAYS, false, configFactories, configs);
         this.block = block;
+        this.conditionalTrigger = conditionalTrigger;
     }
 
-    public BlockingBehaviour getBlock() {
+	public BlockingBehaviour getBlock() {
         return block;
     }
+    
+    public ConditionalTriggerConfig getConditionalTrigger() {
+        return conditionalTrigger;
+    }
+    
+    public boolean isConditionMet(AbstractBuild build, TaskListener listener,
+			EnvVars env) {
+    	// If no conditional trigger was specified, always return true.
+    	if(conditionalTrigger == null)
+    			return true;
+    	
+        return conditionalTrigger.isConditionMet(build, listener, env);
+    }
 
-    @Override
+	@Override
     public List<Future<AbstractBuild>> perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         List<Future<AbstractBuild>> r = super.perform(build, launcher, listener);
         if (block==null) return Collections.emptyList();

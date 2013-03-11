@@ -51,23 +51,27 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@link Builder} that triggers other projects and optionally waits for their completion.
- *
+ * {@link Builder} that triggers other projects and optionally waits for their
+ * completion.
+ * 
  * @author Kohsuke Kawaguchi
  */
 public class TriggerBuilder extends Builder implements DependecyDeclarer {
 
 	private final ArrayList<BlockableBuildTriggerConfig> configs;
 
-    @DataBoundConstructor
+	@DataBoundConstructor
 	public TriggerBuilder(List<BlockableBuildTriggerConfig> configs) {
-		this.configs = new ArrayList<BlockableBuildTriggerConfig>(Util.fixNull(configs));
+		this.configs = new ArrayList<BlockableBuildTriggerConfig>(
+				Util.fixNull(configs));
 	}
 
 	public TriggerBuilder(BlockableBuildTriggerConfig... configs) {
@@ -83,88 +87,128 @@ public class TriggerBuilder extends Builder implements DependecyDeclarer {
 		return BuildStepMonitor.NONE;
 	}
 
-    @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-            BuildListener listener) throws InterruptedException, IOException {
-        EnvVars env = build.getEnvironment(listener);
-        env.overrideAll(build.getBuildVariables());
+	@Override
+	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+			BuildListener listener) throws InterruptedException, IOException {
+		EnvVars env = build.getEnvironment(listener);
+		env.overrideAll(build.getBuildVariables());
 
-        boolean buildStepResult = true;
+		boolean buildStepResult = true;
+		try {
+			for (BlockableBuildTriggerConfig config : configs) {
+				List<AbstractProject> projectList = config.getProjectList(
+						build.getProject().getParent(), env);
+				if (config.isConditionMet(build, listener, env)) {
+					ListMultimap<AbstractProject, Future<AbstractBuild>> futures = config
+							.perform2(build, launcher, listener);
+					if (!projectList.isEmpty()) {
+						// handle non-blocking configs
+						if (futures.isEmpty()) {
+							listener.getLogger()
+									.println(
+											"Triggering projects: "
+													+ getProjectListAsString(projectList));
+							continue;
+						}
+						// handle blocking configs
+						for (AbstractProject p : projectList) {
+							// handle non-buildable projects
+							if (!p.isBuildable()) {
+								listener.getLogger()
+										.println(
+												"Skipping "
+														+ HyperlinkNote.encodeTo(
+																'/' + p.getUrl(),
+																p.getFullDisplayName())
+														+ ". The project is either disabled or the configuration has not been saved yet.");
+								continue;
+							}
+							for (Future<AbstractBuild> future : futures.get(p)) {
+								try {
+									listener.getLogger()
+											.println(
+													"Waiting for the completion of "
+															+ HyperlinkNote
+																	.encodeTo(
+																			'/' + p.getUrl(),
+																			p.getFullDisplayName()));
+									AbstractBuild b = future.get();
+									listener.getLogger().println(
+											HyperlinkNote.encodeTo(
+													'/' + b.getUrl(),
+													b.getFullDisplayName())
+													+ " completed. Result was "
+													+ b.getResult());
+									build.getActions().add(
+											new BuildInfoExporterAction(
+													b.getProject()
+															.getFullName(), b
+															.getNumber()));
 
-        try {
-            for (BlockableBuildTriggerConfig config : configs) {
-                ListMultimap<AbstractProject, Future<AbstractBuild>> futures = config.perform2(build, launcher, listener);
-                List<AbstractProject> projectList = config.getProjectList(build.getProject().getParent(),env);
+									if (buildStepResult
+											&& config.getBlock()
+													.mapBuildStepResult(
+															b.getResult())) {
+										build.setResult(config.getBlock()
+												.mapBuildResult(b.getResult()));
+									} else {
+										buildStepResult = false;
+									}
+								} catch (CancellationException x) {
+									throw new AbortException(
+											p.getFullDisplayName()
+													+ " aborted.");
+								}
+							}
+						}
+					} else {
+						throw new AbortException(
+								"Build aborted. No projects to trigger. Check your configuration!");
+					}
+				} else {
+					listener.getLogger()
+					.println(
+							"Skipping "
+									+ getProjectListAsString(projectList)
+									+ " as script condition was not met.");
+				}
+			}
+		} catch (ExecutionException e) {
+			throw new IOException2(e); // can't happen, I think.
+		}
 
-                if(!projectList.isEmpty()){
-                    //handle non-blocking configs
-                    if(futures.isEmpty()){
-                        listener.getLogger().println("Triggering projects: " + getProjectListAsString(projectList));
-                        continue;
-                    }
-                    //handle blocking configs
-                    for (AbstractProject p : projectList) {
-                        //handle non-buildable projects
-                        if(!p.isBuildable()){
-                            listener.getLogger().println("Skipping " + HyperlinkNote.encodeTo('/'+ p.getUrl(), p.getFullDisplayName()) + ". The project is either disabled or the configuration has not been saved yet.");
-                            continue;
-                        }
-                        for (Future<AbstractBuild> future : futures.get(p)) {
-                            try {
-                                listener.getLogger().println("Waiting for the completion of " + HyperlinkNote.encodeTo('/'+ p.getUrl(), p.getFullDisplayName()));
-                                AbstractBuild b = future.get();
-                                listener.getLogger().println(HyperlinkNote.encodeTo('/'+ b.getUrl(), b.getFullDisplayName()) + " completed. Result was "+b.getResult());
-                                build.getActions().add(new BuildInfoExporterAction(b.getProject().getFullName(), b.getNumber()));
-                                
-                                if(buildStepResult && config.getBlock().mapBuildStepResult(b.getResult())) {
-                                    build.setResult(config.getBlock().mapBuildResult(b.getResult()));
-                                } else {
-                                    buildStepResult = false;
-                                }
-                            } catch (CancellationException x) {
-                                throw new AbortException(p.getFullDisplayName() +" aborted.");
-                            }
-                        }
-                    }
-                } else {
-                    throw new AbortException("Build aborted. No projects to trigger. Check your configuration!");
-                }
-            }
-        } catch (ExecutionException e) {
-            throw new IOException2(e); // can't happen, I think.
-        }
+		return buildStepResult;
+	}
 
-        return buildStepResult;
-    }
+	public void buildDependencyGraph(AbstractProject owner,
+			DependencyGraph graph) {
+		for (BuildTriggerConfig config : configs)
+			for (AbstractProject project : config.getProjectList(
+					owner.getParent(), null))
+				graph.addDependency(new ParameterizedDependency(owner, project,
+						config) {
+					@Override
+					public boolean shouldTriggerBuild(AbstractBuild build,
+							TaskListener listener, List<Action> actions) {
+						// TriggerBuilders are inline already.
+						return false;
+					}
+				});
 
-    @Override
-    public void buildDependencyGraph(AbstractProject owner, DependencyGraph graph) {
-        for (BuildTriggerConfig config : configs)
-            for (AbstractProject project : config.getProjectList(owner.getParent(),null))
-                graph.addDependency(new ParameterizedDependency(owner, project, config) {
-                        @Override
-                        public boolean shouldTriggerBuild(AbstractBuild build,
-                                                          TaskListener listener,
-                                                          List<Action> actions) {
-                            // TriggerBuilders are inline already.
-                            return false;
-                        }
-                    });
+	}
 
-    }
-    
-    
-    private String getProjectListAsString(List<AbstractProject> projectList){
-        StringBuffer projectListString = new StringBuffer();
-        for (Iterator iterator = projectList.iterator(); iterator.hasNext();) {
-            AbstractProject project = (AbstractProject) iterator.next();
-            projectListString.append(HyperlinkNote.encodeTo('/'+ project.getUrl(), project.getFullDisplayName()));
-            if(iterator.hasNext()){
-                projectListString.append(", ");
-            }
-        }
-        return projectListString.toString();
-    }
+	private String getProjectListAsString(List<AbstractProject> projectList) {
+		StringBuffer projectListString = new StringBuffer();
+		for (Iterator iterator = projectList.iterator(); iterator.hasNext();) {
+			AbstractProject project = (AbstractProject) iterator.next();
+			projectListString.append(HyperlinkNote.encodeTo(
+					'/' + project.getUrl(), project.getFullDisplayName()));
+			if (iterator.hasNext()) {
+				projectListString.append(", ");
+			}
+		}
+		return projectListString.toString();
+	}
 
 	@Extension
 	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {

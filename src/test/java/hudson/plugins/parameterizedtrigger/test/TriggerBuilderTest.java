@@ -23,21 +23,29 @@
  */
 package hudson.plugins.parameterizedtrigger.test;
 
-import hudson.model.Cause.UserCause;
+import hudson.EnvVars;
+import hudson.model.BooleanParameterValue;
+import hudson.model.ParametersAction;
 import hudson.model.Project;
 import hudson.model.Result;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameters;
 import hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig;
 import hudson.plugins.parameterizedtrigger.BlockingBehaviour;
+import hudson.plugins.parameterizedtrigger.ConditionalTriggerConfig;
 import hudson.plugins.parameterizedtrigger.CounterBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.TriggerBuilder;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.jvnet.hudson.test.HudsonTestCase;
 import com.google.common.collect.ImmutableList;
+import hudson.model.Run;
+import hudson.model.StringParameterValue;
+
+import java.io.IOException;
 
 public class TriggerBuilderTest extends HudsonTestCase {
 
@@ -64,18 +72,15 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         triggerProject.getBuildersList().add(triggerBuilder);
 
-        triggerProject.scheduleBuild2(0, new UserCause()).get();
+        triggerProject.scheduleBuild2(0).get();
 
-        List<String> log = triggerProject.getLastBuild().getLog(20);
-        for (String string : log) {
-            System.out.println(string);
-        }
-        assertEquals("project1 #1 completed. Result was SUCCESS", log.get(2));
-        assertEquals("project2 #1 completed. Result was SUCCESS", log.get(4));
-        assertEquals("project3 #1 completed. Result was SUCCESS", log.get(6));
-        assertEquals("project4 #1 completed. Result was SUCCESS", log.get(8));
-        assertEquals("project5 #1 completed. Result was SUCCESS", log.get(10));
-        assertEquals("project6 #1 completed. Result was SUCCESS", log.get(12));
+        assertLines(triggerProject.getLastBuild(),
+                "project1 #1 completed. Result was SUCCESS",
+                "project2 #1 completed. Result was SUCCESS",
+                "project3 #1 completed. Result was SUCCESS",
+                "project4 #1 completed. Result was SUCCESS",
+                "project5 #1 completed. Result was SUCCESS",
+                "project6 #1 completed. Result was SUCCESS");
         
     }
     
@@ -90,15 +95,12 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         triggerProject.getBuildersList().add(triggerBuilder);
 
-        triggerProject.scheduleBuild2(0, new UserCause()).get();
+        triggerProject.scheduleBuild2(0).get();
 
-        List<String> log = triggerProject.getLastBuild().getLog(20);
-        for (String string : log) {
-            System.out.println(string);
-        }
-        assertEquals("Waiting for the completion of project1", log.get(1));
-        assertEquals("Waiting for the completion of project2", log.get(3));
-        assertEquals("Waiting for the completion of project3", log.get(5));
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of project1",
+                "Waiting for the completion of project2",
+                "Waiting for the completion of project3");
     }
     
     public void testNonBlockingTrigger() throws Exception {
@@ -113,14 +115,10 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         triggerProject.getBuildersList().add(triggerBuilder);
 
-        triggerProject.scheduleBuild2(0, new UserCause()).get();
+        triggerProject.scheduleBuild2(0).get();
 
-        List<String> log = triggerProject.getLastBuild().getLog(20);
-        for (String string : log) {
-            System.out.println(string);
-        }
-        
-        assertEquals("Triggering projects: project1, project2, project3", log.get(1));
+        assertLines(triggerProject.getLastBuild(),
+                "Triggering projects: project1, project2, project3");
     }
 
     public void testConsoleOutputWithCounterParameters() throws Exception{
@@ -134,26 +132,22 @@ public class TriggerBuilderTest extends HudsonTestCase {
         ImmutableList<AbstractBuildParameterFactory> buildParameter = ImmutableList.<AbstractBuildParameterFactory>of(new CounterBuildParameterFactory("0","2","1", "TEST=COUNT$COUNT"));
         List<AbstractBuildParameters> emptyList = Collections.<AbstractBuildParameters>emptyList();
         
-        BlockableBuildTriggerConfig bBTConfig = new BlockableBuildTriggerConfig("project1, project2, project3", blockingBehaviour, buildParameter, emptyList);
+        BlockableBuildTriggerConfig bBTConfig = new BlockableBuildTriggerConfig("project1, project2, project3", null, blockingBehaviour, buildParameter, emptyList);
         
         triggerProject.getBuildersList().add(new TriggerBuilder(bBTConfig));
 
-        triggerProject.scheduleBuild2(0, new UserCause()).get();
+        triggerProject.scheduleBuild2(0).get();
 
-        List<String> log = triggerProject.getLastBuild().getLog(30);
-        for (String string : log) {
-            System.out.println(string);
-        }
-        
-        assertEquals("project1 #1 completed. Result was SUCCESS", log.get(2));
-        assertEquals("project1 #2 completed. Result was SUCCESS", log.get(4));
-        assertEquals("project1 #3 completed. Result was SUCCESS", log.get(6));
-        assertEquals("project2 #1 completed. Result was SUCCESS", log.get(8));
-        assertEquals("project2 #2 completed. Result was SUCCESS", log.get(10));
-        assertEquals("project2 #3 completed. Result was SUCCESS", log.get(12));
-        assertEquals("project3 #1 completed. Result was SUCCESS", log.get(14));
-        assertEquals("project3 #2 completed. Result was SUCCESS", log.get(16));
-        assertEquals("project3 #3 completed. Result was SUCCESS", log.get(18));
+        assertLines(triggerProject.getLastBuild(),
+                "project1 #1 completed. Result was SUCCESS",
+                "project1 #2 completed. Result was SUCCESS",
+                "project1 #3 completed. Result was SUCCESS",
+                "project2 #1 completed. Result was SUCCESS",
+                "project2 #2 completed. Result was SUCCESS",
+                "project2 #3 completed. Result was SUCCESS",
+                "project3 #1 completed. Result was SUCCESS",
+                "project3 #2 completed. Result was SUCCESS",
+                "project3 #3 completed. Result was SUCCESS");
     }
 
     
@@ -169,15 +163,100 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         triggerProject.getBuildersList().add(triggerBuilder);
 
-        triggerProject.scheduleBuild2(0, new UserCause()).get();
+        triggerProject.scheduleBuild2(0).get();
 
-        List<String> log = triggerProject.getLastBuild().getLog(20);
-        for (String string : log) {
-            System.out.println(string);
-        }
-        assertEquals("Waiting for the completion of project1", log.get(1));
-        assertEquals("Skipping project2. The project is either disabled or the configuration has not been saved yet.", log.get(3));
-        assertEquals("Waiting for the completion of project3", log.get(4));
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of project1",
+                "Skipping project2. The project is either disabled or the configuration has not been saved yet.",
+                "Waiting for the completion of project3");
       
     }
+
+    public void testConditionalTriggerWithConditionMet() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("true"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of projectB");
+      
+    }
+
+    public void testConditionalTriggerWithConditionFailed() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("false"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Skipping projectB as script condition was not met.");
+      
+    }
+    
+    public void testConditionalTriggerWithBooleanParameterSubstitution() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("${parameter1}"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0, null, new ParametersAction(new BooleanParameterValue("parameter1", true))).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of projectB");
+      
+    }
+    
+    public void testConditionalTriggerWithStringParameterSubstitution() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("${param 1}"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0, null, new ParametersAction(new StringParameterValue("param 1", "true && true || false"))).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of projectB");
+      
+    }
+    
+    public void testConditionalTriggerWithInvalidSubstitution() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("${param 1}"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "FATAL: Couldn't evaluate script ${param 1} due to unsubstituted variables - param 1");
+      
+    }
+    
+    private void assertLines(Run<?,?> build, String... lines) throws IOException {
+        List<String> log = build.getLog(Integer.MAX_VALUE);
+        List<String> rest = log;
+        for (String line : lines) {
+            int where = rest.indexOf(line);
+            assertFalse("Could not find line '" + line + "' among remaining log lines " + rest, where == -1);
+            rest = rest.subList(where + 1, rest.size());
+        }
+    }
+
 }

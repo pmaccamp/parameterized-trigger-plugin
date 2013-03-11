@@ -27,7 +27,7 @@ public class CounterBuildParameterFactoryTest extends HudsonTestCase {
         Project projectB = createFreeStyleProject();
         projectA.getBuildersList().add(
                 new TriggerBuilder(
-                        new BlockableBuildTriggerConfig(projectB.getName(),
+                        new BlockableBuildTriggerConfig(projectB.getName(), null,
                                 new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
                                 ImmutableList.<AbstractBuildParameterFactory>of(new CounterBuildParameterFactory("0","1","1", "TEST=COUNT$COUNT")),
                                 Collections.<AbstractBuildParameters>emptyList())));
@@ -55,7 +55,7 @@ public class CounterBuildParameterFactoryTest extends HudsonTestCase {
         Project projectB = createFreeStyleProject();
         projectA.getBuildersList().add(
                 new TriggerBuilder(
-                        new BlockableBuildTriggerConfig(projectB.getName(),
+                        new BlockableBuildTriggerConfig(projectB.getName(), null,
                                 new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
                                 ImmutableList.<AbstractBuildParameterFactory>of(
                                         new CounterBuildParameterFactory("0","1","1", "TEST=COUNT$COUNT"),
@@ -83,7 +83,7 @@ public class CounterBuildParameterFactoryTest extends HudsonTestCase {
             newValues.add(buildEnvVar.get("NEWTEST"));
         }
         assertEquals(ImmutableSet.of("COUNT0","COUNT1"), values);
-        assertEquals(ImmutableSet.of("COUNT0", "COUNT1", "COUNT2"), newValues);
-    }
+		assertEquals(ImmutableSet.of("COUNT0", "COUNT1", "COUNT2"), newValues);
+	}
 
 }
