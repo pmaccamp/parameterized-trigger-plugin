@@ -23,7 +23,6 @@
  */
 package hudson.plugins.parameterizedtrigger.test;
 
-import hudson.EnvVars;
 import hudson.model.BooleanParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Project;
@@ -35,8 +34,6 @@ import hudson.plugins.parameterizedtrigger.BlockingBehaviour;
 import hudson.plugins.parameterizedtrigger.ConditionalTriggerConfig;
 import hudson.plugins.parameterizedtrigger.CounterBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.TriggerBuilder;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -53,7 +50,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
         return new BlockableBuildTriggerConfig(projects, new BlockingBehaviour("never", "never", "never"), null);
     }
 
-    public void testOrderOfLogEntries() throws Exception {
+    public void testLogEntries() throws Exception {
         createFreeStyleProject("project1");
         createFreeStyleProject("project2");
         createFreeStyleProject("project3");
@@ -74,14 +71,12 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         triggerProject.scheduleBuild2(0).get();
 
-        assertLines(triggerProject.getLastBuild(),
-                "project1 #1 completed. Result was SUCCESS",
-                "project2 #1 completed. Result was SUCCESS",
-                "project3 #1 completed. Result was SUCCESS",
-                "project4 #1 completed. Result was SUCCESS",
-                "project5 #1 completed. Result was SUCCESS",
-                "project6 #1 completed. Result was SUCCESS");
-        
+        assertLines(triggerProject.getLastBuild(), "project1 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project2 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project3 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project4 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project5 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project6 #1 completed. Result was SUCCESS");
     }
     
     public void testWaitingForCompletion() throws Exception {
@@ -245,7 +240,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
         triggerProject.scheduleBuild2(0).get();
 
         assertLines(triggerProject.getLastBuild(),
-                "FATAL: Couldn't evaluate script ${param 1} due to unsubstituted variables - param 1");
+                "java.lang.RuntimeException: Couldn't evaluate script ${param 1} due to unsubstituted variables - param 1");
       
     }
     

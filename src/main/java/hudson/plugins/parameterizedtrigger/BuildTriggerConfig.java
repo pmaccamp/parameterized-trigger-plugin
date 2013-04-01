@@ -8,6 +8,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.Util;
+import hudson.console.HyperlinkNote;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -132,6 +134,19 @@ public class BuildTriggerConfig implements Describable<BuildTriggerConfig> {
 
         projectList.addAll(Items.fromNameList(context, projectNames.toString(), AbstractProject.class));
 		return projectList;
+	}
+	
+	public String getProjectListAsString(List<AbstractProject> projectList) {
+		StringBuffer projectListString = new StringBuffer();
+		for (Iterator iterator = projectList.iterator(); iterator.hasNext();) {
+			AbstractProject project = (AbstractProject) iterator.next();
+			projectListString.append(HyperlinkNote.encodeTo(
+					'/' + project.getUrl(), project.getFullDisplayName()));
+			if (iterator.hasNext()) {
+				projectListString.append(", ");
+			}
+		}
+		return projectListString.toString();
 	}
 
 	private static ParametersAction mergeParameters(ParametersAction base, ParametersAction overlay) {

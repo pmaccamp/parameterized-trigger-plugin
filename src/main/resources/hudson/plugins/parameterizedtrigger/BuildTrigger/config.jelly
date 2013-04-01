@@ -7,7 +7,7 @@
 
         <f:entry>
           <div align="right">
-            <input type="button" value="${%Add trigger...}" class="repeatable-add show-if-last" />
+            <input type="button" value="${%Add trigger to run in parallel...}" class="repeatable-add show-if-last" />
             <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only" style="margin-left: 1em;" />
           </div>
         </f:entry>
