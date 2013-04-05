@@ -60,5 +60,9 @@ THE SOFTWARE.
       </j:forEach>
     </select>
   </f:entry>
+  
+  <f:entry title="${%Ignore aborted builds}" field="ignoreAbortedBuilds" >
+	<f:checkbox checked="${instance.ignoreAbortedBuilds}"/>
+  </f:entry>
 
 </j:jelly>

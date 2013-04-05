@@ -48,12 +48,14 @@ public class BlockingBehaviour extends AbstractDescribableImpl<BlockingBehaviour
     public final Result buildStepFailureThreshold;
     public final Result unstableThreshold;
     public final Result failureThreshold;
+	public boolean ignoreAbortedBuilds = false;
 
     @DataBoundConstructor
-    public BlockingBehaviour(String buildStepFailureThreshold, String unstableThreshold, String failureThreshold) {
+    public BlockingBehaviour(String buildStepFailureThreshold, String unstableThreshold, String failureThreshold, boolean ignoreAbortedBuilds) {
         this.buildStepFailureThreshold = parse(buildStepFailureThreshold);
         this.unstableThreshold = parse(unstableThreshold);
         this.failureThreshold = parse(failureThreshold);
+        this.ignoreAbortedBuilds = ignoreAbortedBuilds;
     }
 
     private Result parse(String t) {
@@ -62,11 +64,23 @@ public class BlockingBehaviour extends AbstractDescribableImpl<BlockingBehaviour
         }
         return Result.fromString(t);
     }
-
+    public BlockingBehaviour(String buildStepFailureThreshold, String unstableThreshold, String failureThreshold) {
+    	this.buildStepFailureThreshold = parse(buildStepFailureThreshold);
+        this.unstableThreshold = parse(unstableThreshold);
+        this.failureThreshold = parse(failureThreshold);
+        this.ignoreAbortedBuilds = false;
+    }
     public BlockingBehaviour(Result buildStepFailureThreshold, Result unstableThreshold, Result failureThreshold) {
         this.buildStepFailureThreshold = buildStepFailureThreshold;
         this.unstableThreshold = unstableThreshold;
         this.failureThreshold = failureThreshold;
+        this.ignoreAbortedBuilds = ignoreAbortedBuilds;
+    }
+    public BlockingBehaviour(Result buildStepFailureThreshold, Result unstableThreshold, Result failureThreshold, boolean ignoreAbortedBuilds) {
+        this.buildStepFailureThreshold = buildStepFailureThreshold;
+        this.unstableThreshold = unstableThreshold;
+        this.failureThreshold = failureThreshold;
+        this.ignoreAbortedBuilds = ignoreAbortedBuilds;
     }
     
     /**
@@ -76,6 +90,9 @@ public class BlockingBehaviour extends AbstractDescribableImpl<BlockingBehaviour
      * @return {@code false} if the triggering build step has to fail, {@code true} otherwise
      */
     public boolean mapBuildStepResult(Result r) {
+    	if (r == Result.ABORTED && ignoreAbortedBuilds){
+    		return true;
+    	}    		
         if (buildStepFailureThreshold!=null && r.isWorseOrEqualTo(buildStepFailureThreshold)) {
             return false;
         }
@@ -89,6 +106,9 @@ public class BlockingBehaviour extends AbstractDescribableImpl<BlockingBehaviour
      * @return the result of the triggering build
      */
     public Result mapBuildResult(Result r) {
+    	if (r == Result.ABORTED && ignoreAbortedBuilds){
+    		return SUCCESS;
+    	}  
         if (failureThreshold!=null && r.isWorseOrEqualTo(failureThreshold))   return FAILURE;
         if (unstableThreshold!=null && r.isWorseOrEqualTo(unstableThreshold))  return UNSTABLE;
         return SUCCESS;

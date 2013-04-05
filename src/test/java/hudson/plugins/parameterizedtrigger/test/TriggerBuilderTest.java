@@ -36,8 +36,9 @@ import hudson.plugins.parameterizedtrigger.CounterBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.TriggerBuilder;
 import java.util.Collections;
 import java.util.List;
-
 import org.jvnet.hudson.test.HudsonTestCase;
+import org.jvnet.hudson.test.recipes.PresetData;
+
 import com.google.common.collect.ImmutableList;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
@@ -242,6 +243,36 @@ public class TriggerBuilderTest extends HudsonTestCase {
         assertLines(triggerProject.getLastBuild(),
                 "java.lang.RuntimeException: Couldn't evaluate script ${param 1} due to unsubstituted variables - param 1");
       
+    }
+    
+    @PresetData(org.jvnet.hudson.test.recipes.PresetData.DataSet.NO_ANONYMOUS_READACCESS)
+    public void testTriggerWithSecurity() throws Exception {
+    	createFreeStyleProject("project1");
+        createFreeStyleProject("project2");
+        createFreeStyleProject("project3");
+        createFreeStyleProject("project4");
+        createFreeStyleProject("project5");
+        createFreeStyleProject("project6");
+
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+
+        TriggerBuilder triggerBuilder = new TriggerBuilder(createTriggerConfig("project1"));
+        triggerBuilder.getConfigs().add(createTriggerConfig("project2"));
+        triggerBuilder.getConfigs().add(createTriggerConfig("project3"));
+        triggerBuilder.getConfigs().add(createTriggerConfig("project4"));
+        triggerBuilder.getConfigs().add(createTriggerConfig("project5"));
+        triggerBuilder.getConfigs().add(createTriggerConfig("project6"));
+
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        triggerProject.scheduleBuild2(0).get();
+
+        assertLines(triggerProject.getLastBuild(), "project1 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project2 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project3 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project4 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project5 #1 completed. Result was SUCCESS");
+        assertLines(triggerProject.getLastBuild(), "project6 #1 completed. Result was SUCCESS");
     }
     
     private void assertLines(Run<?,?> build, String... lines) throws IOException {
