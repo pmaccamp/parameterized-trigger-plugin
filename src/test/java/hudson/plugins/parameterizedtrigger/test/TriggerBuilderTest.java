@@ -26,6 +26,7 @@ package hudson.plugins.parameterizedtrigger.test;
 import hudson.model.BooleanParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Project;
+import hudson.model.ParameterValue;
 import hudson.model.Result;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.AbstractBuildParameters;
@@ -34,6 +35,8 @@ import hudson.plugins.parameterizedtrigger.BlockingBehaviour;
 import hudson.plugins.parameterizedtrigger.ConditionalTriggerConfig;
 import hudson.plugins.parameterizedtrigger.CounterBuildParameterFactory;
 import hudson.plugins.parameterizedtrigger.TriggerBuilder;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.jvnet.hudson.test.HudsonTestCase;
@@ -79,7 +82,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
         assertLines(triggerProject.getLastBuild(), "project5 #1 completed. Result was SUCCESS");
         assertLines(triggerProject.getLastBuild(), "project6 #1 completed. Result was SUCCESS");
     }
-    
+
     public void testWaitingForCompletion() throws Exception {
         createFreeStyleProject("project1");
         createFreeStyleProject("project2");
@@ -98,7 +101,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
                 "Waiting for the completion of project2",
                 "Waiting for the completion of project3");
     }
-    
+
     public void testNonBlockingTrigger() throws Exception {
         createFreeStyleProject("project1");
         createFreeStyleProject("project2");
@@ -121,15 +124,15 @@ public class TriggerBuilderTest extends HudsonTestCase {
         createFreeStyleProject("project1");
         createFreeStyleProject("project2");
         createFreeStyleProject("project3");
-        
+
         Project<?,?> triggerProject = createFreeStyleProject();
-        
+
         BlockingBehaviour blockingBehaviour = new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE);
         ImmutableList<AbstractBuildParameterFactory> buildParameter = ImmutableList.<AbstractBuildParameterFactory>of(new CounterBuildParameterFactory("0","2","1", "TEST=COUNT$COUNT"));
         List<AbstractBuildParameters> emptyList = Collections.<AbstractBuildParameters>emptyList();
-        
+
         BlockableBuildTriggerConfig bBTConfig = new BlockableBuildTriggerConfig("project1, project2, project3", null, blockingBehaviour, buildParameter, emptyList);
-        
+
         triggerProject.getBuildersList().add(new TriggerBuilder(bBTConfig));
 
         triggerProject.scheduleBuild2(0).get();
@@ -146,7 +149,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
                 "project3 #3 completed. Result was SUCCESS");
     }
 
-    
+
     public void testBlockingTriggerWithDisabledProjects() throws Exception {
         createFreeStyleProject("project1");
         Project<?, ?> p2 = createFreeStyleProject("project2");
@@ -165,7 +168,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
                 "Waiting for the completion of project1",
                 "Skipping project2. The project is either disabled or the configuration has not been saved yet.",
                 "Waiting for the completion of project3");
-      
+
     }
 
     public void testConditionalTriggerWithConditionMet() throws Exception {
@@ -181,7 +184,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         assertLines(triggerProject.getLastBuild(),
                 "Waiting for the completion of projectB");
-      
+
     }
 
     public void testConditionalTriggerWithConditionFailed() throws Exception {
@@ -197,9 +200,9 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         assertLines(triggerProject.getLastBuild(),
                 "Skipping projectB as script condition was not met.");
-      
+
     }
-    
+
     public void testConditionalTriggerWithBooleanParameterSubstitution() throws Exception {
         Project<?, ?> triggerProject = createFreeStyleProject("projectA");
         createFreeStyleProject("projectB");
@@ -212,9 +215,9 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         assertLines(triggerProject.getLastBuild(),
                 "Waiting for the completion of projectB");
-      
+
     }
-    
+
     public void testConditionalTriggerWithStringParameterSubstitution() throws Exception {
         Project<?, ?> triggerProject = createFreeStyleProject("projectA");
         createFreeStyleProject("projectB");
@@ -227,9 +230,47 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         assertLines(triggerProject.getLastBuild(),
                 "Waiting for the completion of projectB");
-      
+
     }
-    
+
+    public void testConditionalTriggerWithMultipleStringParameterSubstitution() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("$param1 || $param2"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        List<ParameterValue> params = new ArrayList<ParameterValue>();
+        params.add(new StringParameterValue("param1", "true && true || false"));
+        params.add(new StringParameterValue("param2", "true && true || false"));
+
+        triggerProject.scheduleBuild2(0, null, new ParametersAction(params)).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of projectB");
+
+    }
+
+    public void testConditionalTriggerWithMultipleBracketedStringParameterSubstitution() throws Exception {
+        Project<?, ?> triggerProject = createFreeStyleProject("projectA");
+        createFreeStyleProject("projectB");
+
+        BlockableBuildTriggerConfig config = new BlockableBuildTriggerConfig("projectB", new ConditionalTriggerConfig("${param 1} && ${param 2}"), new BlockingBehaviour("never", "never", "never"), Collections.<AbstractBuildParameters>emptyList());
+        TriggerBuilder triggerBuilder = new TriggerBuilder(config);
+        triggerProject.getBuildersList().add(triggerBuilder);
+
+        List<ParameterValue> params = new ArrayList<ParameterValue>();
+        params.add(new StringParameterValue("param 1", "true && true || false"));
+        params.add(new StringParameterValue("param 2", "true && true || false"));
+
+        triggerProject.scheduleBuild2(0, null, new ParametersAction(params)).get();
+
+        assertLines(triggerProject.getLastBuild(),
+                "Waiting for the completion of projectB");
+
+    }
+
     public void testConditionalTriggerWithInvalidSubstitution() throws Exception {
         Project<?, ?> triggerProject = createFreeStyleProject("projectA");
         createFreeStyleProject("projectB");
@@ -242,9 +283,9 @@ public class TriggerBuilderTest extends HudsonTestCase {
 
         assertLines(triggerProject.getLastBuild(),
                 "java.lang.RuntimeException: Couldn't evaluate script ${param 1} due to unsubstituted variables - param 1");
-      
+
     }
-    
+
     @PresetData(org.jvnet.hudson.test.recipes.PresetData.DataSet.NO_ANONYMOUS_READACCESS)
     public void testTriggerWithSecurity() throws Exception {
     	createFreeStyleProject("project1");
@@ -274,7 +315,7 @@ public class TriggerBuilderTest extends HudsonTestCase {
         assertLines(triggerProject.getLastBuild(), "project5 #1 completed. Result was SUCCESS");
         assertLines(triggerProject.getLastBuild(), "project6 #1 completed. Result was SUCCESS");
     }
-    
+
     private void assertLines(Run<?,?> build, String... lines) throws IOException {
         List<String> log = build.getLog(Integer.MAX_VALUE);
         List<String> rest = log;
