@@ -19,6 +19,11 @@ import javax.script.ScriptEngineManager;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+/**
+ * ConditionalTriggerConfig - allows for entry of a groovy script that supports parameter substitution that determines whether a config will run.
+ * 
+ * @author Patrick McKeown
+ */
 public class ConditionalTriggerConfig implements
 		Describable<ConditionalTriggerConfig> {
 	private String script;
