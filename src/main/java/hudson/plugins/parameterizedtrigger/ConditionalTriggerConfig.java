@@ -21,7 +21,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * ConditionalTriggerConfig - allows for entry of a groovy script that supports parameter substitution that determines whether a config will run.
- * 
+ *
  * @author Patrick McKeown
  */
 public class ConditionalTriggerConfig implements
@@ -29,7 +29,7 @@ public class ConditionalTriggerConfig implements
 	private String script;
 	// search for variables of the form ${VARNAME} or $NoWhiteSpace
 	private static final Pattern pattern = Pattern
-			.compile("\\$\\{(.+)\\}|\\$(.+)\\s?");
+			.compile("\\$\\{([^\\}]+)\\}|\\$([^\\s]+)\\s?");
 
 	@DataBoundConstructor
 	public ConditionalTriggerConfig(String script) {
