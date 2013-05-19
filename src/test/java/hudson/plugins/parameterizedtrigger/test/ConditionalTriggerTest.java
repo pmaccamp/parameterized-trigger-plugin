@@ -34,6 +34,17 @@ public class ConditionalTriggerTest extends HudsonTestCase {
         }
     }
 
+    private void assertSubstring(Run<?, ?> build, String substring) throws IOException {
+        List<String> log = build.getLog(Integer.MAX_VALUE);
+        for (String line : log) {
+            if (line.contains(substring)) {
+                String test= "true";
+                return;
+            }
+        }
+        fail("Could not find substring '" + substring + "' among log lines " + log);
+    }
+
     public void testConditionalTriggerWithConditionMet() throws Exception {
         Project<?, ?> triggerProject = createFreeStyleProject("projectA");
         createFreeStyleProject("projectB");
@@ -197,10 +208,8 @@ public class ConditionalTriggerTest extends HudsonTestCase {
 
         triggerProject.scheduleBuild2(0, null, new ParametersAction(params)).get();
 
-        assertLines(triggerProject.getLastBuild(),
+        assertSubstring(triggerProject.getLastBuild(),
                 "java.lang.RuntimeException: Couldn't evaluate script def check (build, listener) "
-                + "{ test.sdfgsfdg(\"test\") } : javax.script.ScriptException: "
-                + "org.codehaus.groovy.runtime.InvokerInvocationException: groovy.lang.MissingPropertyException: "
-                + "No such property: test for class: Script1");
+                + "{ test.sdfgsfdg(\"test\") } : javax.script.ScriptException: ");
     }
 }
