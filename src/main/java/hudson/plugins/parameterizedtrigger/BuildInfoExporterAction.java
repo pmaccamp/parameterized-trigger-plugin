@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package hudson.plugins.parameterizedtrigger;
 
 import java.util.Map;
@@ -31,33 +30,32 @@ import hudson.model.EnvironmentContributingAction;
 import hudson.model.AbstractBuild;
 
 public class BuildInfoExporterAction implements EnvironmentContributingAction {
-  public static final String JOB_NAME_VARIABLE = "LAST_TRIGGERED_JOB_NAME";
-  public static final String BUILD_NUMBER_VARIABLE_PREFIX = "TRIGGERED_BUILD_NUMBER_";
 
-  private String buildName;
-  private int buildNumber;
+    public static final String JOB_NAME_VARIABLE = "LAST_TRIGGERED_JOB_NAME";
+    public static final String BUILD_NUMBER_VARIABLE_PREFIX = "TRIGGERED_BUILD_NUMBER_";
+    private String buildName;
+    private int buildNumber;
 
-  public BuildInfoExporterAction(String buildName, int buildNumber) {
-    super();
-    this.buildName = buildName;
-    this.buildNumber = buildNumber;
-  }
+    public BuildInfoExporterAction(String buildName, int buildNumber) {
+        super();
+        this.buildName = buildName;
+        this.buildNumber = buildNumber;
+    }
 
-  public String getIconFileName() {
-    return null;
-  }
+    public String getIconFileName() {
+        return null;
+    }
 
-  public String getDisplayName() {
-    return null;
-  }
+    public String getDisplayName() {
+        return null;
+    }
 
-  public String getUrlName() {
-    return null;
-  }
+    public String getUrlName() {
+        return null;
+    }
 
-
-  public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
-    env.put(JOB_NAME_VARIABLE, buildName);
-    env.put(BUILD_NUMBER_VARIABLE_PREFIX + buildName, Integer.toString(buildNumber));
-  }
+    public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+        env.put(JOB_NAME_VARIABLE, buildName);
+        env.put(BUILD_NUMBER_VARIABLE_PREFIX + buildName, Integer.toString(buildNumber));
+    }
 }

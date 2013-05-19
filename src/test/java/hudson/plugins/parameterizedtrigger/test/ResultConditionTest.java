@@ -52,10 +52,10 @@ public class ResultConditionTest extends HudsonTestCase {
 
         schedule(projectA, projectB, ResultCondition.UNSTABLE_OR_BETTER);
         assertEquals(2, projectB.getLastBuild().getNumber());
-        
+
         schedule(projectA, projectB, ResultCondition.UNSTABLE);
         assertEquals(2, projectB.getLastBuild().getNumber());
-        
+
         schedule(projectA, projectB, ResultCondition.UNSTABLE_OR_WORSE);
         assertEquals(2, projectB.getLastBuild().getNumber());
     }
@@ -77,7 +77,7 @@ public class ResultConditionTest extends HudsonTestCase {
 
         schedule(projectA, projectB, ResultCondition.UNSTABLE);
         assertEquals(2, projectB.getLastBuild().getNumber());
-        
+
         schedule(projectA, projectB, ResultCondition.UNSTABLE_OR_WORSE);
         assertEquals(3, projectB.getLastBuild().getNumber());
     }
@@ -88,7 +88,9 @@ public class ResultConditionTest extends HudsonTestCase {
         hudson.rebuildDependencyGraph();
         projectA.scheduleBuild2(0).get();
         Queue.Item q = hudson.getQueue().getItem(projectB);
-        if (q != null) q.getFuture().get();
+        if (q != null) {
+            q.getFuture().get();
+        }
     }
 
     public void testTriggerByFailedBuild() throws Exception {
@@ -108,7 +110,7 @@ public class ResultConditionTest extends HudsonTestCase {
 
         schedule(projectA, projectB, ResultCondition.UNSTABLE);
         assertEquals(1, projectB.getLastBuild().getNumber());
-        
+
         schedule(projectA, projectB, ResultCondition.UNSTABLE_OR_WORSE);
         assertEquals(2, projectB.getLastBuild().getNumber());
     }

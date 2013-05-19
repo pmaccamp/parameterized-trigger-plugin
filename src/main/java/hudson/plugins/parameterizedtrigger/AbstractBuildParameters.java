@@ -10,13 +10,13 @@ import java.io.IOException;
 
 public abstract class AbstractBuildParameters extends AbstractDescribableImpl<AbstractBuildParameters> {
 
-    public abstract Action getAction(AbstractBuild<?,?> build, TaskListener listener)
+    public abstract Action getAction(AbstractBuild<?, ?> build, TaskListener listener)
             throws IOException, InterruptedException, DontTriggerException;
 
     /**
      * Retrieve the build environment from the upstream build
      */
-    public EnvVars getEnvironment(AbstractBuild<?,?> build, TaskListener listener)
+    public EnvVars getEnvironment(AbstractBuild<?, ?> build, TaskListener listener)
             throws IOException, InterruptedException {
 
         CapturedEnvironmentAction capture = build.getAction(CapturedEnvironmentAction.class);
@@ -27,5 +27,6 @@ public abstract class AbstractBuildParameters extends AbstractDescribableImpl<Ab
         }
     }
 
-    public static class DontTriggerException extends Exception {}
+    public static class DontTriggerException extends Exception {
+    }
 }

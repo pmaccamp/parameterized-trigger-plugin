@@ -41,71 +41,70 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 public class RenameJobTest extends HudsonTestCase {
 
-	public void testRenameAndDeleteJobSingleProject() throws Exception {
-		//create projectA
-		Project<?,?> projectA = createParentProject("projectA", "projectB");
-		Project<?,?> projectB = createFreeStyleProject("projectB");
-		hudson.rebuildDependencyGraph();
+    public void testRenameAndDeleteJobSingleProject() throws Exception {
+        //create projectA
+        Project<?, ?> projectA = createParentProject("projectA", "projectB");
+        Project<?, ?> projectB = createFreeStyleProject("projectB");
+        hudson.rebuildDependencyGraph();
 
-		projectB.renameTo("projectB-renamed");
+        projectB.renameTo("projectB-renamed");
 
-		//confirm projectA's build step trigger is updated automatically
-		assertEquals("build step trigger project should be renamed", "projectB-renamed", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
+        //confirm projectA's build step trigger is updated automatically
+        assertEquals("build step trigger project should be renamed", "projectB-renamed", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
 
-		//confirm projectA's post build trigger is updated automatically
-		assertEquals("post build trigger project should be renamed", "projectB-renamed", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
-		
-		projectB.delete();
+        //confirm projectA's post build trigger is updated automatically
+        assertEquals("post build trigger project should be renamed", "projectB-renamed", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
 
-		//confirm projectA's build step trigger is updated automatically:
-		assertNull("now-empty build step trigger should be removed", projectA.getBuildersList().get(TriggerBuilder.class));
+        projectB.delete();
 
-		//confirm projectA's post build trigger is updated automatically:
-		assertNull("now-empty post build trigger should be removed", projectA.getPublishersList().get(BuildTrigger.class));
-	}
+        //confirm projectA's build step trigger is updated automatically:
+        assertNull("now-empty build step trigger should be removed", projectA.getBuildersList().get(TriggerBuilder.class));
 
-	public void testRenameAndDeleteJobMultipleProjects() throws Exception {
-		Project<?,?> projectA = createParentProject("projectA", "projectB", "projectC");
-		Project<?,?> projectB = createFreeStyleProject("projectB");
-		createFreeStyleProject("projectC");
-		hudson.rebuildDependencyGraph();
+        //confirm projectA's post build trigger is updated automatically:
+        assertNull("now-empty post build trigger should be removed", projectA.getPublishersList().get(BuildTrigger.class));
+    }
 
-		projectB.renameTo("projectB-renamed");
-		
-		//confirm projectA's build step trigger is updated automatically
-		assertEquals("build step trigger project should be renamed", "projectB-renamed,projectC", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
+    public void testRenameAndDeleteJobMultipleProjects() throws Exception {
+        Project<?, ?> projectA = createParentProject("projectA", "projectB", "projectC");
+        Project<?, ?> projectB = createFreeStyleProject("projectB");
+        createFreeStyleProject("projectC");
+        hudson.rebuildDependencyGraph();
 
-		//confirm projectA's post build trigger is updated automatically
-		assertEquals("post build trigger project should be renamed", "projectB-renamed,projectC", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
-		
-		projectB.delete();
+        projectB.renameTo("projectB-renamed");
 
-		//confirm projectA's build step trigger is updated automatically:
-		assertEquals("build step trigger project should be removed", "projectC", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
+        //confirm projectA's build step trigger is updated automatically
+        assertEquals("build step trigger project should be renamed", "projectB-renamed,projectC", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
 
-		//confirm projectA's post build trigger is updated automatically:
-		assertEquals("post build trigger project should be removed", "projectC", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
-	}
+        //confirm projectA's post build trigger is updated automatically
+        assertEquals("post build trigger project should be renamed", "projectB-renamed,projectC", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
 
-	private Project<?, ?> createParentProject(String parentJobName, String... childJobNames) throws IOException {
-		//create ProjectA
-		Project<?,?> project = createFreeStyleProject(parentJobName);
+        projectB.delete();
 
-		List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
-		buildParameters.add(new CurrentBuildParameters());
-		
-		StringBuilder childJobNamesString = new StringBuilder();
-		for(String childJobName : childJobNames){
-			childJobNamesString.append(childJobName);
-			childJobNamesString.append(",");
-		}
-		
-		//setup build step trigger
-		project.getBuildersList().add(new TriggerBuilder(new BlockableBuildTriggerConfig(childJobNamesString.toString(), null, buildParameters)));
+        //confirm projectA's build step trigger is updated automatically:
+        assertEquals("build step trigger project should be removed", "projectC", projectA.getBuildersList().get(TriggerBuilder.class).getConfigs().get(0).getProjects());
 
-		//setup post build trigger
-		project.getPublishersList().add(new BuildTrigger(new BuildTriggerConfig(childJobNamesString.toString(), ResultCondition.SUCCESS, new CurrentBuildParameters())));
-		return project;
-	}
+        //confirm projectA's post build trigger is updated automatically:
+        assertEquals("post build trigger project should be removed", "projectC", projectA.getPublishersList().get(BuildTrigger.class).getConfigs().get(0).getProjects());
+    }
 
+    private Project<?, ?> createParentProject(String parentJobName, String... childJobNames) throws IOException {
+        //create ProjectA
+        Project<?, ?> project = createFreeStyleProject(parentJobName);
+
+        List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
+        buildParameters.add(new CurrentBuildParameters());
+
+        StringBuilder childJobNamesString = new StringBuilder();
+        for (String childJobName : childJobNames) {
+            childJobNamesString.append(childJobName);
+            childJobNamesString.append(",");
+        }
+
+        //setup build step trigger
+        project.getBuildersList().add(new TriggerBuilder(new BlockableBuildTriggerConfig(childJobNamesString.toString(), null, buildParameters)));
+
+        //setup post build trigger
+        project.getPublishersList().add(new BuildTrigger(new BuildTriggerConfig(childJobNamesString.toString(), ResultCondition.SUCCESS, new CurrentBuildParameters())));
+        return project;
+    }
 }

@@ -31,7 +31,6 @@ import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.types.FileSet;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-
 /**
  *
  * @author shoughton
@@ -51,13 +50,13 @@ public class FileBuildParameterFactory extends AbstractBuildParameterFactory {
 
     @Override
     public List<AbstractBuildParameters> getParameters(AbstractBuild<?, ?> build, TaskListener listener) throws IOException, InterruptedException, AbstractBuildParameters.DontTriggerException {
-        
+
         List<AbstractBuildParameters> result = Lists.newArrayList();
-        
+
         try {
             FilePath workspace = getWorkspace(build);
             FilePath[] files = workspace.list(getFilePattern());
-            for(FilePath f: files) {
+            for (FilePath f : files) {
                 String parametersStr = f.readToString();
                 Logger.getLogger(FileBuildParameterFactory.class.getName()).log(Level.INFO, null, "Triggering build with " + f.getBaseName());
                 result.add(new PredefinedBuildParameters(parametersStr));
@@ -66,10 +65,10 @@ public class FileBuildParameterFactory extends AbstractBuildParameterFactory {
         } catch (Exception ex) {
             Logger.getLogger(FileBuildParameterFactory.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         return result;
     }
-    
+
     private FilePath getWorkspace(AbstractBuild build) {
         FilePath workspace = build.getWorkspace();
         if (workspace == null) {
@@ -77,14 +76,14 @@ public class FileBuildParameterFactory extends AbstractBuildParameterFactory {
         }
         return workspace;
     }
-    
+
     //private PredefinedBuildParameters getParameterBlock() {
     //    String stringWithCount = Util.replaceMacro(paramExpr, ImmutableMap.of("CHANGELIST", changelist.toString()));
     //    return new PredefinedBuildParameters(stringWithCount);
     //}
-
     @Extension
     public static class DescriptorImpl extends AbstractBuildParameterFactoryDescriptor {
+
         @Override
         public String getDisplayName() {
             return Messages.FileBuildParameterFactory_FileBuildParameterFactory();

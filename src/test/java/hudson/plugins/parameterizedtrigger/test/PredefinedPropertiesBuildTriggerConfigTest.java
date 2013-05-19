@@ -34,24 +34,24 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 public class PredefinedPropertiesBuildTriggerConfigTest extends HudsonTestCase {
 
-	public void test() throws Exception {
+    public void test() throws Exception {
 
-		Project projectA = createFreeStyleProject("projectA");
-		String properties = "KEY=value";
-		projectA.getPublishersList().add(
-				new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS,
-						new PredefinedBuildParameters(properties))));
+        Project projectA = createFreeStyleProject("projectA");
+        String properties = "KEY=value";
+        projectA.getPublishersList().add(
+                new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS,
+                new PredefinedBuildParameters(properties))));
 
-		CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
-		Project projectB = createFreeStyleProject("projectB");
-		projectB.getBuildersList().add(builder);
-		projectB.setQuietPeriod(1);
-		hudson.rebuildDependencyGraph();
+        CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+        Project projectB = createFreeStyleProject("projectB");
+        projectB.getBuildersList().add(builder);
+        projectB.setQuietPeriod(1);
+        hudson.rebuildDependencyGraph();
 
-		projectA.scheduleBuild2(0).get();
-		hudson.getQueue().getItem(projectB).getFuture().get();
+        projectA.scheduleBuild2(0).get();
+        hudson.getQueue().getItem(projectB).getFuture().get();
 
-		assertNotNull("builder should record environment", builder.getEnvVars());
-		assertEquals("value", builder.getEnvVars().get("KEY"));
-	}
+        assertNotNull("builder should record environment", builder.getEnvVars());
+        assertEquals("value", builder.getEnvVars().get("KEY"));
+    }
 }

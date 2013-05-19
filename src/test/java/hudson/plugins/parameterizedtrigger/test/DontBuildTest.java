@@ -38,32 +38,33 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 public class DontBuildTest extends HudsonTestCase {
 
-	public static final class DontBuildTrigger extends AbstractBuildParameters {
-		boolean called = false;
-		@Override
-		public Action getAction(AbstractBuild<?,?> build, TaskListener listener)
-				throws IOException, InterruptedException, DontTriggerException {
-			called = true;
-			throw new DontTriggerException();
-		}
-	}
+    public static final class DontBuildTrigger extends AbstractBuildParameters {
 
-	public void test() throws Exception {
+        boolean called = false;
 
-		Project projectA = createFreeStyleProject("projectA");
-		DontBuildTrigger dbt = new DontBuildTrigger();
-		projectA.getPublishersList().add(
-			new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, dbt)));
+        @Override
+        public Action getAction(AbstractBuild<?, ?> build, TaskListener listener)
+                throws IOException, InterruptedException, DontTriggerException {
+            called = true;
+            throw new DontTriggerException();
+        }
+    }
 
-		Project projectB = createFreeStyleProject("projectB");
-		projectB.setQuietPeriod(0);
-		hudson.rebuildDependencyGraph();
+    public void test() throws Exception {
 
-		projectA.scheduleBuild2(0).get();
-		Thread.sleep(1000);
+        Project projectA = createFreeStyleProject("projectA");
+        DontBuildTrigger dbt = new DontBuildTrigger();
+        projectA.getPublishersList().add(
+                new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, dbt)));
 
-		assertEquals(0, projectB.getBuilds().size());
-		assertTrue("trigger was not called", dbt.called);
-	}
+        Project projectB = createFreeStyleProject("projectB");
+        projectB.setQuietPeriod(0);
+        hudson.rebuildDependencyGraph();
 
+        projectA.scheduleBuild2(0).get();
+        Thread.sleep(1000);
+
+        assertEquals(0, projectB.getBuilds().size());
+        assertTrue("trigger was not called", dbt.called);
+    }
 }

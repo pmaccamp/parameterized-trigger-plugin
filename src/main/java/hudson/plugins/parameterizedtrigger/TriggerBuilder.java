@@ -22,7 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package hudson.plugins.parameterizedtrigger;
 
 import hudson.EnvVars;
@@ -54,92 +53,95 @@ import java.util.concurrent.Executors;
 /**
  * {@link Builder} that triggers other projects and optionally waits for their
  * completion.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public class TriggerBuilder extends Builder implements DependecyDeclarer {
 
-	private final ArrayList<BlockableBuildTriggerConfig> configs;
-	private final int NUM_THREADS = 10;
+    private final ArrayList<BlockableBuildTriggerConfig> configs;
+    private final int NUM_THREADS = 10;
 
-	@DataBoundConstructor
-	public TriggerBuilder(List<BlockableBuildTriggerConfig> configs) {
-		this.configs = new ArrayList<BlockableBuildTriggerConfig>(
-				Util.fixNull(configs));
-	}
+    @DataBoundConstructor
+    public TriggerBuilder(List<BlockableBuildTriggerConfig> configs) {
+        this.configs = new ArrayList<BlockableBuildTriggerConfig>(
+                Util.fixNull(configs));
+    }
 
-	public TriggerBuilder(BlockableBuildTriggerConfig... configs) {
-		this(Arrays.asList(configs));
-	}
+    public TriggerBuilder(BlockableBuildTriggerConfig... configs) {
+        this(Arrays.asList(configs));
+    }
 
-	public List<BlockableBuildTriggerConfig> getConfigs() {
-		return configs;
-	}
+    public List<BlockableBuildTriggerConfig> getConfigs() {
+        return configs;
+    }
 
-	@Override
-	public BuildStepMonitor getRequiredMonitorService() {
-		return BuildStepMonitor.NONE;
-	}
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
 
-	@Override
-	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-			BuildListener listener) throws InterruptedException, IOException {
-		EnvVars env = build.getEnvironment(listener);
-		env.overrideAll(build.getBuildVariables());
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+            BuildListener listener) throws InterruptedException, IOException {
+        EnvVars env = build.getEnvironment(listener);
+        env.overrideAll(build.getBuildVariables());
 
-		boolean result = true;
-		ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
-		CompletionService<Boolean> ecs = new ExecutorCompletionService<Boolean>(
-				executor);
-		for (BlockableBuildTriggerConfig config : configs) {
-			ecs.submit(new BlockableBuildTriggerCallable(config, build, env,
-					launcher, listener));
-		}
+        boolean result = true;
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
+        CompletionService<Boolean> ecs = new ExecutorCompletionService<Boolean>(
+                executor);
+        for (BlockableBuildTriggerConfig config : configs) {
+            ecs.submit(new BlockableBuildTriggerCallable(config, build, env,
+                    launcher, listener));
+        }
 
-		for (int i = 0; i < configs.size(); i++) {
-				Boolean configResult;
-				try {
-					configResult = ecs.take().get();
-				} catch (ExecutionException e) {
-					// TODO Auto-generated catch block
-					listener.getLogger().println(e.getMessage());
-					configResult = false;
-				}
-				// If any configs fail, set the overall result to false
-				result = result && configResult;
+        for (int i = 0; i < configs.size(); i++) {
+            Boolean configResult;
+            try {
+                configResult = ecs.take().get();
+            } catch (ExecutionException e) {
+                // TODO Auto-generated catch block
+                listener.getLogger().println(e.getMessage());
+                configResult = false;
+            }
+            // If any configs fail, set the overall result to false
+            result = result && configResult;
 
-		}
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	public void buildDependencyGraph(AbstractProject owner,
-			DependencyGraph graph) {
-		for (BuildTriggerConfig config : configs)
-			for (AbstractProject project : config.getProjectList(
-					owner.getParent(), null))
-				graph.addDependency(new ParameterizedDependency(owner, project,
-						config) {
-					@Override
-					public boolean shouldTriggerBuild(AbstractBuild build,
-							TaskListener listener, List<Action> actions) {
-						// TriggerBuilders are inline already.
-						return false;
-					}
-				});
+    public void buildDependencyGraph(AbstractProject owner,
+            DependencyGraph graph) {
+        for (BuildTriggerConfig config : configs) {
+            for (AbstractProject project : config.getProjectList(
+                    owner.getParent(), null)) {
+                graph.addDependency(new ParameterizedDependency(owner, project,
+                        config) {
+                    @Override
+                    public boolean shouldTriggerBuild(AbstractBuild build,
+                            TaskListener listener, List<Action> actions) {
+                        // TriggerBuilders are inline already.
+                        return false;
+                    }
+                });
+            }
+        }
 
-	}
+    }
 
-	@Extension
-	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
-		@Override
-		public String getDisplayName() {
-			return "Trigger/call builds on other projects";
-		}
+    @Extension
+    public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			return true;
-		}
-	}
+        @Override
+        public String getDisplayName() {
+            return "Trigger/call builds on other projects";
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
+        }
+    }
 }

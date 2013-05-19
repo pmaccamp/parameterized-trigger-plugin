@@ -43,107 +43,100 @@ import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
 
 public class CurrentBuildParametersTest extends HudsonTestCase {
 
-	public void test() throws Exception {
-		Project<?,?> projectA = createFreeStyleProject("projectA");
-		projectA.getPublishersList().add(
-				new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, new CurrentBuildParameters())));
+    public void test() throws Exception {
+        Project<?, ?> projectA = createFreeStyleProject("projectA");
+        projectA.getPublishersList().add(
+                new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, new CurrentBuildParameters())));
 
-		CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
-		Project projectB = createFreeStyleProject("projectB");
-		projectB.getBuildersList().add(builder);
-		projectB.setQuietPeriod(1);
-		hudson.rebuildDependencyGraph();
+        CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+        Project projectB = createFreeStyleProject("projectB");
+        projectB.getBuildersList().add(builder);
+        projectB.setQuietPeriod(1);
+        hudson.rebuildDependencyGraph();
 
-		projectA.scheduleBuild2(0, new UserCause(), new ParametersAction(
-			new StringParameterValue("KEY", "value"))).get();
-		hudson.getQueue().getItem(projectB).getFuture().get();
+        projectA.scheduleBuild2(0, new UserCause(), new ParametersAction(
+                new StringParameterValue("KEY", "value"))).get();
+        hudson.getQueue().getItem(projectB).getFuture().get();
 
-		assertNotNull("builder should record environment", builder.getEnvVars());
-		assertEquals("value", builder.getEnvVars().get("KEY"));
+        assertNotNull("builder should record environment", builder.getEnvVars());
+        assertEquals("value", builder.getEnvVars().get("KEY"));
 
-                // Now rename projectB and confirm projectA's build trigger is updated automatically:
-                projectB.renameTo("new-projectB");
-                assertEquals("rename in trigger", "new-projectB", projectA.getPublishersList()
-                             .get(BuildTrigger.class).getConfigs().get(0).getProjects());
+        // Now rename projectB and confirm projectA's build trigger is updated automatically:
+        projectB.renameTo("new-projectB");
+        assertEquals("rename in trigger", "new-projectB", projectA.getPublishersList()
+                .get(BuildTrigger.class).getConfigs().get(0).getProjects());
 
-                // Now delete projectB and confirm projectA's build trigger is updated automatically:
-                projectB.delete();
-                assertNull("now-empty trigger should be removed",
-                           projectA.getPublishersList().get(BuildTrigger.class));
-	}
-	
-	/**
-	 * Project A: Post-build build-trigger
-	 * 			  + currentBuildParameters
-	 *			  + no parameters defined
-	 *			  + Trigger Build without parameters = false
-	 *	=> Project B should NOT be triggered
-	 *
-	 * @throws Exception
-	 */
-	public void testPostBuildTriggerNoParametersWithoutParametersFalse() throws Exception {
-		testPostBuildTriggerNoParameters(false);
- 	}
+        // Now delete projectB and confirm projectA's build trigger is updated automatically:
+        projectB.delete();
+        assertNull("now-empty trigger should be removed",
+                projectA.getPublishersList().get(BuildTrigger.class));
+    }
 
-	/**
-	 * Project A: Post-build build-trigger
-	 * 			  + currentBuildParameters
-	 *			  + no parameters defined
-	 *			  + Trigger Build without parameters = true
-	 *	=> Project B should be triggered
-	 *
-	 * @throws Exception
-	 */
-	public void testPostBuildTriggerNoParametersWithoutParametersTrue() throws Exception {
-		testPostBuildTriggerNoParameters(true);
- 	}
-	
-	public void testPostBuildTriggerNoParameters(boolean pWithoutParameters) throws Exception {
-		Project<?,?> projectA = createFreeStyleProject("projectA");
-		List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
-		buildParameters.add(new CurrentBuildParameters());
-		projectA.getPublishersList().add(new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, pWithoutParameters, buildParameters)));
-		CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+    /**
+     * Project A: Post-build build-trigger + currentBuildParameters + no
+     * parameters defined + Trigger Build without parameters = false => Project
+     * B should NOT be triggered
+     *
+     * @throws Exception
+     */
+    public void testPostBuildTriggerNoParametersWithoutParametersFalse() throws Exception {
+        testPostBuildTriggerNoParameters(false);
+    }
 
-		Project<?,?> projectB = createFreeStyleProject("projectB");
-		projectB.getBuildersList().add(builder);
-		projectB.setQuietPeriod(1);
-		hudson.rebuildDependencyGraph();
+    /**
+     * Project A: Post-build build-trigger + currentBuildParameters + no
+     * parameters defined + Trigger Build without parameters = true => Project B
+     * should be triggered
+     *
+     * @throws Exception
+     */
+    public void testPostBuildTriggerNoParametersWithoutParametersTrue() throws Exception {
+        testPostBuildTriggerNoParameters(true);
+    }
 
-		projectA.scheduleBuild2(0, new UserCause()).get();
-		assertEquals(pWithoutParameters, hudson.getQueue().contains(projectB));
-		List<String> log = projectA.getLastBuild().getLog(20);
-		for (String string : log) {
-			System.out.println(string);
-		}
- 	}
+    public void testPostBuildTriggerNoParameters(boolean pWithoutParameters) throws Exception {
+        Project<?, ?> projectA = createFreeStyleProject("projectA");
+        List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
+        buildParameters.add(new CurrentBuildParameters());
+        projectA.getPublishersList().add(new BuildTrigger(new BuildTriggerConfig("projectB", ResultCondition.SUCCESS, pWithoutParameters, buildParameters)));
+        CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
 
-	/**
-	 * Project A: Build step trigger build
-	 * 			  + currentBuildParameters
-	 * 			  + no parameters defined
-	 *  => Project B should be triggered
-	 *
-	 * @throws Exception
-	 */
-	public void testBuildStepTriggerBuildNoParameters() throws Exception {
-		Project<?,?> projectA = createFreeStyleProject("projectA");
-		List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
-		buildParameters.add(new CurrentBuildParameters());
-		projectA.getBuildersList().add(new TriggerBuilder(new BlockableBuildTriggerConfig("projectB", null, buildParameters)));
-		CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+        Project<?, ?> projectB = createFreeStyleProject("projectB");
+        projectB.getBuildersList().add(builder);
+        projectB.setQuietPeriod(1);
+        hudson.rebuildDependencyGraph();
 
-		Project<?,?> projectB = createFreeStyleProject("projectB");
-		projectB.getBuildersList().add(builder);
-		projectB.setQuietPeriod(1);
-		hudson.rebuildDependencyGraph();
+        projectA.scheduleBuild2(0, new UserCause()).get();
+        assertEquals(pWithoutParameters, hudson.getQueue().contains(projectB));
+        List<String> log = projectA.getLastBuild().getLog(20);
+        for (String string : log) {
+            System.out.println(string);
+        }
+    }
 
-		projectA.scheduleBuild2(0, new UserCause()).get();
-		assertTrue(hudson.getQueue().contains(projectB));
-		List<String> log = projectA.getLastBuild().getLog(20);
-		for (String string : log) {
-			System.out.println(string);
-		}
- 	}
-	
+    /**
+     * Project A: Build step trigger build + currentBuildParameters + no
+     * parameters defined => Project B should be triggered
+     *
+     * @throws Exception
+     */
+    public void testBuildStepTriggerBuildNoParameters() throws Exception {
+        Project<?, ?> projectA = createFreeStyleProject("projectA");
+        List<AbstractBuildParameters> buildParameters = new ArrayList<AbstractBuildParameters>();
+        buildParameters.add(new CurrentBuildParameters());
+        projectA.getBuildersList().add(new TriggerBuilder(new BlockableBuildTriggerConfig("projectB", null, buildParameters)));
+        CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+
+        Project<?, ?> projectB = createFreeStyleProject("projectB");
+        projectB.getBuildersList().add(builder);
+        projectB.setQuietPeriod(1);
+        hudson.rebuildDependencyGraph();
+
+        projectA.scheduleBuild2(0, new UserCause()).get();
+        assertTrue(hudson.getQueue().contains(projectB));
+        List<String> log = projectA.getLastBuild().getLog(20);
+        for (String string : log) {
+            System.out.println(string);
+        }
+    }
 }

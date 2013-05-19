@@ -23,14 +23,14 @@ import java.util.Set;
 public class CounterBuildParameterFactoryTest extends HudsonTestCase {
 
     public void testWithOneParameter() throws Exception {
-        Project<?,?> projectA = createFreeStyleProject();
+        Project<?, ?> projectA = createFreeStyleProject();
         Project projectB = createFreeStyleProject();
         projectA.getBuildersList().add(
                 new TriggerBuilder(
-                        new BlockableBuildTriggerConfig(projectB.getName(), null,
-                                new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
-                                ImmutableList.<AbstractBuildParameterFactory>of(new CounterBuildParameterFactory("0","1","1", "TEST=COUNT$COUNT")),
-                                Collections.<AbstractBuildParameters>emptyList())));
+                new BlockableBuildTriggerConfig(projectB.getName(), null,
+                new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
+                ImmutableList.<AbstractBuildParameterFactory>of(new CounterBuildParameterFactory("0", "1", "1", "TEST=COUNT$COUNT")),
+                Collections.<AbstractBuildParameters>emptyList())));
 
         CaptureAllEnvironmentBuilder builder = new CaptureAllEnvironmentBuilder();
         projectB.getBuildersList().add(builder);
@@ -47,21 +47,20 @@ public class CounterBuildParameterFactoryTest extends HudsonTestCase {
             assertTrue(buildEnvVar.containsKey("TEST"));
             values.add(buildEnvVar.get("TEST"));
         }
-        assertEquals(ImmutableSet.of("COUNT0","COUNT1"), values);
+        assertEquals(ImmutableSet.of("COUNT0", "COUNT1"), values);
     }
 
     public void testWithTwoParameters() throws Exception {
-        Project<?,?> projectA = createFreeStyleProject();
+        Project<?, ?> projectA = createFreeStyleProject();
         Project projectB = createFreeStyleProject();
         projectA.getBuildersList().add(
                 new TriggerBuilder(
-                        new BlockableBuildTriggerConfig(projectB.getName(), null,
-                                new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
-                                ImmutableList.<AbstractBuildParameterFactory>of(
-                                        new CounterBuildParameterFactory("0","1","1", "TEST=COUNT$COUNT"),
-                                        new CounterBuildParameterFactory("0","2","1", "NEWTEST=COUNT$COUNT")
-                                        ),
-                                Collections.<AbstractBuildParameters>emptyList())));
+                new BlockableBuildTriggerConfig(projectB.getName(), null,
+                new BlockingBehaviour(Result.FAILURE, Result.UNSTABLE, Result.FAILURE),
+                ImmutableList.<AbstractBuildParameterFactory>of(
+                new CounterBuildParameterFactory("0", "1", "1", "TEST=COUNT$COUNT"),
+                new CounterBuildParameterFactory("0", "2", "1", "NEWTEST=COUNT$COUNT")),
+                Collections.<AbstractBuildParameters>emptyList())));
         projectB.setConcurrentBuild(true);
 
         CaptureAllEnvironmentBuilder builder = new CaptureAllEnvironmentBuilder();
@@ -82,8 +81,7 @@ public class CounterBuildParameterFactoryTest extends HudsonTestCase {
             values.add(buildEnvVar.get("TEST"));
             newValues.add(buildEnvVar.get("NEWTEST"));
         }
-        assertEquals(ImmutableSet.of("COUNT0","COUNT1"), values);
-		assertEquals(ImmutableSet.of("COUNT0", "COUNT1", "COUNT2"), newValues);
-	}
-
+        assertEquals(ImmutableSet.of("COUNT0", "COUNT1"), values);
+        assertEquals(ImmutableSet.of("COUNT0", "COUNT1", "COUNT2"), newValues);
+    }
 }

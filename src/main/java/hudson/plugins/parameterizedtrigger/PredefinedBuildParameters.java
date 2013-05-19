@@ -21,40 +21,40 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class PredefinedBuildParameters extends AbstractBuildParameters {
 
-	private final String properties;
+    private final String properties;
 
-	@DataBoundConstructor
-	public PredefinedBuildParameters(String properties) {
-		this.properties = properties;
-	}
+    @DataBoundConstructor
+    public PredefinedBuildParameters(String properties) {
+        this.properties = properties;
+    }
 
-	public Action getAction(AbstractBuild<?,?> build, TaskListener listener)
-			throws IOException, InterruptedException {
+    public Action getAction(AbstractBuild<?, ?> build, TaskListener listener)
+            throws IOException, InterruptedException {
 
-		EnvVars env = getEnvironment(build, listener);
+        EnvVars env = getEnvironment(build, listener);
 
-		Properties p = new Properties();
-		p.load(new StringInputStream(properties));
+        Properties p = new Properties();
+        p.load(new StringInputStream(properties));
 
-		List<ParameterValue> values = new ArrayList<ParameterValue>();
-		for (Map.Entry<Object, Object> entry : p.entrySet()) {
-			values.add(new StringParameterValue(entry.getKey().toString(),
-					env.expand(entry.getValue().toString())));
-		}
+        List<ParameterValue> values = new ArrayList<ParameterValue>();
+        for (Map.Entry<Object, Object> entry : p.entrySet()) {
+            values.add(new StringParameterValue(entry.getKey().toString(),
+                    env.expand(entry.getValue().toString())));
+        }
 
-		return new ParametersAction(values);
-	}
+        return new ParametersAction(values);
+    }
 
-	public String getProperties() {
-		return properties;
-	}
+    public String getProperties() {
+        return properties;
+    }
 
-	@Extension
-	public static class DescriptorImpl extends Descriptor<AbstractBuildParameters> {
-		@Override
-		public String getDisplayName() {
-			return "Predefined parameters";
-		}
-	}
+    @Extension
+    public static class DescriptorImpl extends Descriptor<AbstractBuildParameters> {
 
+        @Override
+        public String getDisplayName() {
+            return "Predefined parameters";
+        }
+    }
 }

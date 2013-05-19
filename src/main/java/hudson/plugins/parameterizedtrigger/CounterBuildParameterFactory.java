@@ -28,7 +28,6 @@ public class CounterBuildParameterFactory extends AbstractBuildParameterFactory 
     private final String step;
     private final String paramExpr;
 
-
     public CounterBuildParameterFactory(long from, long to, long step, String paramExpr) {
         this(Long.toString(from), Long.toString(to), Long.toString(step), paramExpr);
     }
@@ -76,16 +75,20 @@ public class CounterBuildParameterFactory extends AbstractBuildParameterFactory 
 
     @Extension
     public static class DescriptorImpl extends AbstractBuildParameterFactoryDescriptor {
+
         @Override
         public String getDisplayName() {
             return Messages.CounterBuildParameterFactory_CounterBuildParameterFactory();
         }
 
-        public FormValidation doCheckFrom(@QueryParameter String value) { return validateNumberField(value);
+        public FormValidation doCheckFrom(@QueryParameter String value) {
+            return validateNumberField(value);
         }
+
         public FormValidation doCheckTo(@QueryParameter String value) {
             return validateNumberField(value);
         }
+
         public FormValidation doCheckStep(@QueryParameter String value) {
             return validateNumberField(value);
         }
@@ -126,12 +129,9 @@ public class CounterBuildParameterFactory extends AbstractBuildParameterFactory 
     public String getParamExpr() {
         return paramExpr;
     }
-
     private static final VariableResolver<String> EMPTY_STRING_VARIABLE_RESOLVER = new VariableResolver<String>() {
-
         public String resolve(String name) {
             return "";
         }
     };
-
 }

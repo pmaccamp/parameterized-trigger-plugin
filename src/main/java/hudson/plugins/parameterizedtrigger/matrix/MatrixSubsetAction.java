@@ -10,8 +10,10 @@ import hudson.model.InvisibleAction;
  * @author Kohsuke Kawaguchi
  */
 public class MatrixSubsetAction extends InvisibleAction {
+
     /**
-     * Filter Groovy expression to be run in {@link Combination#evalGroovyExpression(AxisList, String)}
+     * Filter Groovy expression to be run in
+     * {@link Combination#evalGroovyExpression(AxisList, String)}
      */
     private final String filter;
 

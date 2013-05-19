@@ -35,26 +35,26 @@ import org.jvnet.hudson.test.SingleFileSCM;
 
 public class FileBuildTriggerConfigTest extends HudsonTestCase {
 
-	public void test() throws Exception {
+    public void test() throws Exception {
 
-		Project projectA = createFreeStyleProject("projectA");
-		String properties = "KEY=value";
-		projectA.setScm(new SingleFileSCM("properties.txt", properties));
-		projectA.getPublishersList().add(
-				new BuildTrigger(
-				new BuildTriggerConfig("projectB", ResultCondition.SUCCESS,
-						new FileBuildParameters("properties.txt"))));
+        Project projectA = createFreeStyleProject("projectA");
+        String properties = "KEY=value";
+        projectA.setScm(new SingleFileSCM("properties.txt", properties));
+        projectA.getPublishersList().add(
+                new BuildTrigger(
+                new BuildTriggerConfig("projectB", ResultCondition.SUCCESS,
+                new FileBuildParameters("properties.txt"))));
 
-		CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
-		Project projectB = createFreeStyleProject("projectB");
-		projectB.getBuildersList().add(builder);
-		projectB.setQuietPeriod(1);
-		hudson.rebuildDependencyGraph();
+        CaptureEnvironmentBuilder builder = new CaptureEnvironmentBuilder();
+        Project projectB = createFreeStyleProject("projectB");
+        projectB.getBuildersList().add(builder);
+        projectB.setQuietPeriod(1);
+        hudson.rebuildDependencyGraph();
 
-		projectA.scheduleBuild2(0).get();
-		hudson.getQueue().getItem(projectB).getFuture().get();
+        projectA.scheduleBuild2(0).get();
+        hudson.getQueue().getItem(projectB).getFuture().get();
 
-		assertNotNull("builder should record environment", builder.getEnvVars());
-		assertEquals("value", builder.getEnvVars().get("KEY"));
-	}
+        assertNotNull("builder should record environment", builder.getEnvVars());
+        assertEquals("value", builder.getEnvVars().get("KEY"));
+    }
 }

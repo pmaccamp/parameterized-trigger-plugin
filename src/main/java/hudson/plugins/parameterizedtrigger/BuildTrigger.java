@@ -25,33 +25,34 @@ import java.util.List;
 
 public class BuildTrigger extends Notifier implements DependecyDeclarer, MatrixAggregatable {
 
-	private final ArrayList<BuildTriggerConfig> configs;
+    private final ArrayList<BuildTriggerConfig> configs;
 
     @DataBoundConstructor
-	public BuildTrigger(List<BuildTriggerConfig> configs) {
-		this.configs = new ArrayList<BuildTriggerConfig>(Util.fixNull(configs));
-	}
+    public BuildTrigger(List<BuildTriggerConfig> configs) {
+        this.configs = new ArrayList<BuildTriggerConfig>(Util.fixNull(configs));
+    }
 
-	public BuildTrigger(BuildTriggerConfig... configs) {
-		this(Arrays.asList(configs));
-	}
+    public BuildTrigger(BuildTriggerConfig... configs) {
+        this(Arrays.asList(configs));
+    }
 
-	public List<BuildTriggerConfig> getConfigs() {
-		return configs;
-	}
+    public List<BuildTriggerConfig> getConfigs() {
+        return configs;
+    }
 
-	@Override
-	public boolean needsToRunAfterFinalized() {
-		return true;
-	}
+    @Override
+    public boolean needsToRunAfterFinalized() {
+        return true;
+    }
 
-	public BuildStepMonitor getRequiredMonitorService() {
-		return BuildStepMonitor.NONE;
-	}
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
 
-	@Override @SuppressWarnings("deprecation")
-	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-			BuildListener listener) throws InterruptedException, IOException {
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
+            BuildListener listener) throws InterruptedException, IOException {
         if (canDeclare(build.getProject())) {
             // job will get triggered by dependency graph, so we have to capture buildEnvironment NOW before
             // hudson.model.AbstractBuild.AbstractBuildExecution#cleanUp is called and reset
@@ -64,47 +65,51 @@ public class BuildTrigger extends Notifier implements DependecyDeclarer, MatrixA
         }
 
 
-		return true;
-	}
+        return true;
+    }
 
-	public void buildDependencyGraph(AbstractProject owner, DependencyGraph graph) {
-		// Can only add dependencies in Hudson 1.341 or higher
-		if (!canDeclare(owner)) return;
+    public void buildDependencyGraph(AbstractProject owner, DependencyGraph graph) {
+        // Can only add dependencies in Hudson 1.341 or higher
+        if (!canDeclare(owner)) {
+            return;
+        }
 
-		for (BuildTriggerConfig config : configs)
-			for (AbstractProject project : config.getProjectList(owner.getParent(),null))
-				ParameterizedDependency.add(owner, project, config, graph);
-	}
+        for (BuildTriggerConfig config : configs) {
+            for (AbstractProject project : config.getProjectList(owner.getParent(), null)) {
+                ParameterizedDependency.add(owner, project, config, graph);
+            }
+        }
+    }
 
-	private boolean canDeclare(AbstractProject owner) {
+    private boolean canDeclare(AbstractProject owner) {
         // In Hudson 1.341+ builds will be triggered via DependencyGraph
         // Inner class added in Hudson 1.341
         String ownerClassName = owner.getClass().getName();
-		return DependencyGraph.class.getClasses().length > 0
-                        // See HUDSON-5679 -- dependency graph is also not used when triggered from a promotion
-                        && !ownerClassName.equals("hudson.plugins.promoted_builds.PromotionProcess");
- 	}
+        return DependencyGraph.class.getClasses().length > 0
+                // See HUDSON-5679 -- dependency graph is also not used when triggered from a promotion
+                && !ownerClassName.equals("hudson.plugins.promoted_builds.PromotionProcess");
+    }
 
-	public MatrixAggregator createAggregator(MatrixBuild build, Launcher launcher, BuildListener listener) {
-		return new MatrixAggregator(build, launcher, listener) {
-			@Override
-			public boolean endBuild() throws InterruptedException, IOException {
-				return hudson.tasks.BuildTrigger.execute(build, listener);
-			}
-		};
-	}
+    public MatrixAggregator createAggregator(MatrixBuild build, Launcher launcher, BuildListener listener) {
+        return new MatrixAggregator(build, launcher, listener) {
+            @Override
+            public boolean endBuild() throws InterruptedException, IOException {
+                return hudson.tasks.BuildTrigger.execute(build, listener);
+            }
+        };
+    }
 
-	@Extension
-	public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
-		@Override
-		public String getDisplayName() {
-			return "Trigger parameterized build on other projects";
-		}
+    @Extension
+    public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			return true;
-		}
+        @Override
+        public String getDisplayName() {
+            return "Trigger parameterized build on other projects";
+        }
 
-	}
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
+        }
+    }
 }

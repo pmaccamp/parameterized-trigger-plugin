@@ -36,22 +36,23 @@ import org.jvnet.hudson.test.HudsonTestCase;
  * @author Kohsuke Kawaguchi
  */
 public class ConfigurationRoundtripTest extends HudsonTestCase {
-    public void testConfigRoundtrip() throws Exception {
-/*  poorly written core breaks this test, so this is not yet testable.      
-        FreeStyleProject p = createFreeStyleProject();
-        BuildTrigger orig = new BuildTrigger(
-                // try 0, 1, and 2 build parameters
-                new BuildTriggerConfig("x", ResultCondition.ALWAYS),
-                new BuildTriggerConfig("y", ResultCondition.FAILED,
-                        new FileBuildParameters("foo")),
-                new BuildTriggerConfig("z", ResultCondition.UNSTABLE_OR_BETTER,
-                        new CurrentBuildParameters(),
-                        new SubversionRevisionBuildParameters()));
-        p.getPublishersList().add(orig);
-        submit(createWebClient().getPage(p,"configure").getFormByName("config"));
 
-        // TODO: switch to assertEqualDataBoundBeans in newer Hudson test harness.
-        assertEqualBeans(orig, p.getPublishersList().get(BuildTrigger.class), "configs");
-*/
+    public void testConfigRoundtrip() throws Exception {
+        /*  poorly written core breaks this test, so this is not yet testable.      
+         FreeStyleProject p = createFreeStyleProject();
+         BuildTrigger orig = new BuildTrigger(
+         // try 0, 1, and 2 build parameters
+         new BuildTriggerConfig("x", ResultCondition.ALWAYS),
+         new BuildTriggerConfig("y", ResultCondition.FAILED,
+         new FileBuildParameters("foo")),
+         new BuildTriggerConfig("z", ResultCondition.UNSTABLE_OR_BETTER,
+         new CurrentBuildParameters(),
+         new SubversionRevisionBuildParameters()));
+         p.getPublishersList().add(orig);
+         submit(createWebClient().getPage(p,"configure").getFormByName("config"));
+
+         // TODO: switch to assertEqualDataBoundBeans in newer Hudson test harness.
+         assertEqualBeans(orig, p.getPublishersList().get(BuildTrigger.class), "configs");
+         */
     }
 }

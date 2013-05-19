@@ -31,11 +31,10 @@ import org.jvnet.hudson.test.recipes.LocalData;
 
 public class CompatibilityTest extends HudsonTestCase {
 
-	@LocalData
-	public void test() throws Exception {
-		AbstractProject p = (AbstractProject) hudson.getItem("old");
-		BuildTrigger trigger = (BuildTrigger) p.getPublishersList().get(BuildTrigger.class);
-		assertEquals(2, trigger.getConfigs().size());
-	}
-
+    @LocalData
+    public void test() throws Exception {
+        AbstractProject p = (AbstractProject) hudson.getItem("old");
+        BuildTrigger trigger = (BuildTrigger) p.getPublishersList().get(BuildTrigger.class);
+        assertEquals(2, trigger.getConfigs().size());
+    }
 }

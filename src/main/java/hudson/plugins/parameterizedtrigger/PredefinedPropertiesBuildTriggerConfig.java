@@ -10,25 +10,24 @@ import java.util.List;
 public class PredefinedPropertiesBuildTriggerConfig extends BuildTriggerConfig {
 
     public PredefinedPropertiesBuildTriggerConfig(String projects,
-			ResultCondition condition, AbstractBuildParameters[] configs) {
-		super(projects, condition, configs);
-	}
-    
-	private String projectsValue;
+            ResultCondition condition, AbstractBuildParameters[] configs) {
+        super(projects, condition, configs);
+    }
+    private String projectsValue;
     private String properties;
     private ResultCondition condition;
     private boolean triggerWithNoParameters;
     private boolean includeCurrentParameters;
     private String batchCondition;
-    
+
     public Object readResolve() {
-    	List<AbstractBuildParameters> configs = new ArrayList<AbstractBuildParameters>();
-    	if (includeCurrentParameters) {
-    		configs.add(new CurrentBuildParameters());
-    	}
-    	if (properties != null) {
-    		configs.add(new PredefinedBuildParameters(properties));
-    	}
-		return new BuildTriggerConfig(projectsValue, condition, triggerWithNoParameters, configs);
+        List<AbstractBuildParameters> configs = new ArrayList<AbstractBuildParameters>();
+        if (includeCurrentParameters) {
+            configs.add(new CurrentBuildParameters());
+        }
+        if (properties != null) {
+            configs.add(new PredefinedBuildParameters(properties));
+        }
+        return new BuildTriggerConfig(projectsValue, condition, triggerWithNoParameters, configs);
     }
 }
