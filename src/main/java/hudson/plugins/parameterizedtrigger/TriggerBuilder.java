@@ -109,6 +109,8 @@ public class TriggerBuilder extends Builder implements DependecyDeclarer {
 
         }
 
+        executor.shutdown();
+
         return result;
     }
 
